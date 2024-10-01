@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "adult-content-classifier"
+version = "0.1.0"
+description = ""
+authors = ["Nicolo' Brandizzi <nicolo.brandizzi@iais.fraunhofer.de>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.2.3"
+scikit-learn = "^1.5.2"
+
+
+click = "^8.1.7"
+rich = "^13.8.1"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+train = "adult_content_classifier.cli:main"
