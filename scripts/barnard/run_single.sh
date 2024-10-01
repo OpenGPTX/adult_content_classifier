@@ -7,14 +7,9 @@
 #SBATCH --time=10:00:00              # Maximum execution time (HH:MM:SS)
 #SBATCH --account=p_gptx
 #SBATCH --partition=barnard
-#SBATCH --array=1-4  # langs
 
 set -e
 source /software/foundation/generic/10_modules.sh
-
-DEBUG=1
-
-LANGUAGES="de fr it es"
 
 # Set the working directory
 WORKING_DIR=/data/horse/ws/s6690609-gptx_traindata/brandizzi/adult_content_classifier
@@ -22,7 +17,7 @@ WORKING_DIR=/data/horse/ws/s6690609-gptx_traindata/brandizzi/adult_content_class
 source "$WORKING_DIR/scripts/barnard/install.sh"
 load_modules
 
-language=$(echo $LANGUAGES | cut -d ' ' -f $SLURM_ARRAY_TASK_ID)
+language="en"
 
 ## run with slurm array job
 poetry -vvv run train --language $language
