@@ -21,3 +21,4 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 train_bow = "adult_content_classifier.cli:train_bow"
 profile_bow = "adult_content_classifier.bow.model_profiling:profile"
+train_roberta = "adult_content_classifier.cli:run_transformer_classifier"

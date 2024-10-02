@@ -1,14 +1,14 @@
 import json
+import os
 import random
-from click import Tuple
+from pathlib import Path
+from typing import List
+
 import joblib
 import pandas as pd
-from rich.progress import track
+from click import Tuple
 from rich import print as rprint
-
-import os
-from typing import List
-from pathlib import Path
+from rich.progress import track
 
 YEARS = [  # dumps with filtered dir
     "2024-22",
@@ -22,9 +22,10 @@ def get_adult_files(input_path: str, language: str) -> List[str]:
     adult_content_path = Path(input_path) / "filtered"
 
     rprint(f"Looking for non-adult files in {adult_content_path}")
+ 
 
     files = [
-        f for f in os.listdir(adult_content_path) if f.endswith(f"{language}.jsonl")
+        f for f in os.listdir(adult_content_path) if any(f.endswith(f"{lang}.jsonl") for lang in language)
     ]
 
     # filter files that start with 2 since this is the indicator of adult content
@@ -168,22 +169,48 @@ def save_df(df, output_path: Path, name: str):
     rprint(f"DataFrame saved to {df_file}")
 
 
-def load_all_files(input_dir: str, language: str) -> Tuple[List[str], List[str]]:
+
+def load_files_all_languages(input_dir: str, language: List[str]) -> Tuple[List[str], List[str]]:
     adult_files = []
     non_adult_files = []
     for dumps in YEARS:
-        new_input_dir = f"{input_dir}/{dumps}"
+        for language in ["it", "en", "fr", "es", "de"]:    
+            new_input_dir = f"{input_dir}/{dumps}"
 
-        adult_files += get_adult_files(new_input_dir, language)
-        non_adult_files += get_non_adult_files(new_input_dir, language)
+            adult_files += get_adult_files(new_input_dir, language)
+            non_adult_files += get_non_adult_files(new_input_dir, language)
 
-        if not adult_files:
-            rprint(f"No adult files found in {new_input_dir}")
-            continue
+            if not adult_files:
+                rprint(f"No adult files found in {new_input_dir}")
+                continue
 
-        if not non_adult_files:
-            rprint(f"No non-adult files found in {new_input_dir}")
-            continue
+            if not non_adult_files:
+                rprint(f"No non-adult files found in {new_input_dir}")
+                continue
+
+    # shuffle the files
+    random.shuffle(adult_files)
+    random.shuffle(non_adult_files)
+
+    return adult_files, non_adult_files
+
+
+def load_all_files(input_dir: str, language: List[str]) -> Tuple[List[str], List[str]]:
+    adult_files = []
+    non_adult_files = []
+    for dumps in YEARS:
+            new_input_dir = f"{input_dir}/{dumps}"
+
+            adult_files += get_adult_files(new_input_dir, language)
+            non_adult_files += get_non_adult_files(new_input_dir, language)
+
+            if not adult_files:
+                rprint(f"No adult files found in {new_input_dir}")
+                continue
+
+            if not non_adult_files:
+                rprint(f"No non-adult files found in {new_input_dir}")
+                continue
 
     # shuffle the files
     random.shuffle(adult_files)
@@ -193,9 +220,15 @@ def load_all_files(input_dir: str, language: str) -> Tuple[List[str], List[str]]
 
 
 def generate_text_data(
-    input_dir: str, output_path: str, language: str, should_save=True
+    input_dir: str, output_path: str, language: List[str], should_save=True
 ) -> pd.DataFrame:
-    adult_files, non_adult_files = load_all_files(input_dir, language)
+    
+    name = language[0]
+    if len(language>1):
+        adult_files, non_adult_files = load_files_all_languages(input_dir, language)
+        name = "ENDEFRITES"
+    else:
+        adult_files, non_adult_files = load_all_files(input_dir, language[0])
 
     rprint(
         f"Found {len(adult_files)} adult files and {len(non_adult_files)} non-adult files.\nNow creating df"
@@ -203,13 +236,19 @@ def generate_text_data(
 
     df = create_dataframe_from_docs(adult_files, non_adult_files)
     if should_save:
-        save_df(df, output_path, f"text_{language}")
+        save_df(df, output_path, f"text_{name}")
 
     return df
 
 
-def load_text_data(input_dir: str, output_path: str, language: str) -> pd.DataFrame:
-    df_file = Path(output_path) / f"df_text_{language}.joblib"
+def load_text_data(input_dir: str, output_path: str, language: List[str]) -> pd.DataFrame:
+    
+    # Required update when loading for multiple lanugages
+    name = language[0]
+    if len(language)>1:
+        name = "ENDEFRITES"
+
+    df_file = Path(output_path) / f"df_text_{name}.joblib"
     if df_file.exists():
         df = joblib.load(df_file)
         rprint(f"Loaded DataFrame from {df_file} with {len(df)} lines ")
