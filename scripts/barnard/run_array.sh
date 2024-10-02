@@ -15,7 +15,7 @@ source /software/foundation/generic/10_modules.sh
 LANGUAGES="en de fr it es"
 
 # Set the working directory
-WORKING_DIR=/data/horse/ws/s6690609-gptx_traindata/brandizzi/adult_content_classifier
+WORKING_DIR=/data/horse/ws/s6690609-gptx_traindata/anirban/adult_content_classifier
 
 source "$WORKING_DIR/scripts/barnard/install.sh"
 load_modules

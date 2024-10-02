@@ -10,7 +10,7 @@ from adult_content_classifier.data import (
 from adult_content_classifier.model import evaluate_model, save_model, train_model
 
 INPUT_DIR = "/data/horse/ws/s6690609-gptx_traindata/raw_data/cc/cc_wet_dumps_converted_dt/"
-OUTPUT_PATH = "/data/horse/ws/s6690609-gptx_traindata/brandizzi/adult_content_classifier/artifacts"
+OUTPUT_PATH = "/data/horse/ws/s6690609-gptx_traindata/anirban/adult_content_classifier/artifacts"
 LANGUAGE = "it"
 import roberta
 from rich.traceback import install
