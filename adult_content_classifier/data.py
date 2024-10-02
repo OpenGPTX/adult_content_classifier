@@ -39,6 +39,9 @@ def get_adult_files(input_path: str, language: str) -> List[str]:
 
     rprint(f"Found {len(files)} adult files")
 
+    # shuffle the files
+    random.shuffle(files)
+
     return files
 
 
@@ -52,6 +55,9 @@ def get_non_adult_files(input_path: str, language: str) -> List[str]:
     files = [Path(non_adult_content_path) / f for f in files]
 
     rprint(f"Found {len(files)} non-adult files")
+
+    # shuffle the files
+    random.shuffle(files)
 
     return files
 
@@ -85,6 +91,7 @@ def random_line_lazy(file_path: Path, to_keep: int) -> List[str]:
 def load_dataframe(
     adult_content_files: List[str],
     non_adult_content_files: List[str],
+    lines_to_keep: int = 100000,
 ):
     """
     Loads a random sample of text lines from a list of adult and non-adult JSONL files
@@ -100,26 +107,39 @@ def load_dataframe(
     """
     adult_content = []
     non_adult_content = []
-    to_keep = 10000
+
+    to_keep_adult=lines_to_keep//len(adult_content_files)
+    if not to_keep_adult: to_keep_adult=1
 
     # Read adult content files
-    for file in track(adult_content_files, description="Reading adult content files"):
-        adult_content += random_line_lazy(file, to_keep)
+    for file in track(adult_content_files, description=f"Reading adult content files (keeping {to_keep_adult} lines x file)"):
+        adult_content += random_line_lazy(file, to_keep_adult)
 
     # rprint the number of lines and size list in memory
     rprint(
         f"Read {len(adult_content)} adult content lines with size {sum([len(x) for x in adult_content])/1_000_000:.2f} MB"
     )
 
+    to_keep_non_adult=lines_to_keep//len(non_adult_content_files)
+    if not to_keep_non_adult: to_keep_non_adult=1
+
     # Read non-adult content files
     for file in track(
-        non_adult_content_files, description="Reading non-adult content files"
+        non_adult_content_files, description=f"Reading non-adult content files (keeping {to_keep_non_adult} lines x file)"
     ):
-        non_adult_content += random_line_lazy(file, to_keep//180) # non adult content is 18x larger than adult content
+        non_adult_content += random_line_lazy(file, to_keep_non_adult) # non adult content is 18x larger than adult content
 
     rprint(
         f"Read {len(non_adult_content)} non-adult content lines with size {sum([len(x) for x in non_adult_content])/1_000_000:.2f} MB"
     )
+
+    # Shuffle the data
+    random.shuffle(adult_content)
+    random.shuffle(non_adult_content)
+
+    # Keep only the first 100k lines
+    adult_content = adult_content[:lines_to_keep]
+    non_adult_content = non_adult_content[:lines_to_keep]
 
     # Create the DataFrame
     df = pd.DataFrame(
@@ -138,12 +158,10 @@ def vectorize_data(df: pd.DataFrame):
     vectorizer = TfidfVectorizer(
         lowercase=True,
         # stop_words='english',
-        ngram_range=(1, 4),
+        ngram_range=(1, 3),
         use_idf=True,
         max_features=30000,  # Limit the number of features
         min_df=5,  # Ignore terms that appear in less than 5 documents
-
-
     )
 
     # Use fit_transform directly on the dataframe's text column
@@ -173,9 +191,7 @@ def save_df(df, output_path: Path, name: str):
     joblib.dump(df, df_file)
     rprint(f"DataFrame saved to {df_file}")
 
-
-def generate_text_data(input_dir: str, output_path: str, language: str):
-    
+def load_all_files(input_dir: str, language: str):
     adult_files=[]
     non_adult_files=[]
     for dumps in YEARS:
@@ -196,11 +212,18 @@ def generate_text_data(input_dir: str, output_path: str, language: str):
     random.shuffle(adult_files)
     random.shuffle(non_adult_files)
 
+    return adult_files,non_adult_files
+
+def generate_text_data(input_dir: str, output_path: str, language: str, should_save=True):
+    
+    adult_files, non_adult_files = load_all_files(input_dir, language)
+
     rprint(f"Found {len(adult_files)} adult files and {len(non_adult_files)} non-adult files.\nNow creating df")
 
 
     df = load_dataframe(adult_files, non_adult_files)
-    save_df(df, output_path, f"text_{language}")
+    if should_save:
+        save_df(df, output_path, f"text_{language}")
 
     return df
 
@@ -209,7 +232,7 @@ def load_text_data(input_dir: str, output_path: str, language: str):
     df_file = Path(output_path) / f"df_text_{language}.joblib"
     if df_file.exists():
         df = joblib.load(df_file)
-        rprint(f"Loaded DataFrame from {df_file}")
+        rprint(f"Loaded DataFrame from {df_file} with {len(df)} lines ")
     else:
         df = generate_text_data(input_dir, output_path, language)
 

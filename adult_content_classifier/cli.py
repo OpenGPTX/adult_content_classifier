@@ -5,12 +5,13 @@ from sklearn.model_selection import train_test_split
 from adult_content_classifier.data import (
     load_data,
 )
-from adult_content_classifier.model import evaluate_model, save_model, train_model
+from adult_content_classifier.bow.model import evaluate_model, save_model, train_model
 from rich import print as rprint
 
 INPUT_DIR = "/data/horse/ws/s6690609-gptx_traindata/raw_data/cc/cc_wet_dumps_converted_dt/"
 OUTPUT_PATH = "/data/horse/ws/s6690609-gptx_traindata/brandizzi/adult_content_classifier/artifacts"
 LANGUAGE = "it"
+
 from rich.traceback import install
 install(show_locals=True)
 

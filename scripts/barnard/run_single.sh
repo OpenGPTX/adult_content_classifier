@@ -20,4 +20,4 @@ load_modules
 language="en"
 
 ## run with slurm array job
-poetry -vvv run train --language $language
+poetry -vvv run train_bow --language $language

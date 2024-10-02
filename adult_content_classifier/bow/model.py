@@ -7,6 +7,7 @@ from sklearn.metrics import (
     classification_report,
 )
 import joblib
+from rich import print as rprint
 
 
 # train the model
@@ -18,7 +19,7 @@ def train_model(X_train, y_train):
     model.fit(X_train, y_train)
 
     # print the time
-    print(f"Training time: {time.time() - start}")
+    rprint(f"Training time: {time.time() - start}")
     return model
 
 
@@ -31,19 +32,19 @@ def evaluate_model(model, features_test_transformed, y_test):
 
     # calculate the f1 score
     f1 = f1_score(y_test, y_pred)
-    print(f"F1 score: {f1}")
+    rprint(f"F1 score: {f1}")
 
     # calculate the accuracy
     accuracy = accuracy_score(y_test, y_pred)
-    print(f"Accuracy: {accuracy}")
+    rprint(f"Accuracy: {accuracy}")
 
     # print the classification report
-    print(classification_report(y_test, y_pred))
+    rprint(classification_report(y_test, y_pred))
 
     # print the confusion matrix
-    print(confusion_matrix(y_test, y_pred))
+    rprint(confusion_matrix(y_test, y_pred))
 
-    print(f"Evaluation time: {time.time() - start}")
+    rprint(f"Evaluation time: {time.time() - start}")
     return f1, accuracy
 
 
@@ -54,4 +55,4 @@ def save_model(model, output_path, language):
     # save the model to disk
     model_file = output_path / f"model_{language}.joblib"
     joblib.dump(model, model_file)
-    print(f"Model saved to {model_file}")
+    rprint(f"Model saved to {model_file}")

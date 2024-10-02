@@ -7,7 +7,10 @@
 #SBATCH --time=10:00:00              # Maximum execution time (HH:MM:SS)
 #SBATCH --account=p_gptx
 #SBATCH --partition=barnard
+#SBATCH --output=/data/horse/ws/s6690609-gptx_traindata/brandizzi/adult_content_classifier/slurm_logs/%A_%a.log  # Output file name
+#SBATCH --error=/data/horse/ws/s6690609-gptx_traindata/brandizzi/adult_content_classifier/slurm_logs/%A_%a.log  # Output file name
 #SBATCH --array=1-5  # langs
+
 
 set -e
 source /software/foundation/generic/10_modules.sh
@@ -23,4 +26,4 @@ load_modules
 language=$(echo $LANGUAGES | cut -d ' ' -f $SLURM_ARRAY_TASK_ID)
 
 ## run with slurm array job
-poetry -vvv run train --language $language
+poetry -vvv run train_bow --language $language
