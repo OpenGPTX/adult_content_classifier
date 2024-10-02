@@ -1,8 +1,8 @@
 import json
 import random
+from click import Tuple
 import joblib
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
 from rich.progress import track
 from rich import print as rprint
 
@@ -10,14 +10,13 @@ import os
 from typing import List
 from pathlib import Path
 
-YEARS=[ # dumps with filtered dir
+YEARS = [  # dumps with filtered dir
     "2024-22",
     "2014-41",
     "2019-26",
     "2023-50",
-
-
 ]
+
 
 def get_adult_files(input_path: str, language: str) -> List[str]:
     adult_content_path = Path(input_path) / "filtered"
@@ -62,7 +61,6 @@ def get_non_adult_files(input_path: str, language: str) -> List[str]:
     return files
 
 
-
 def random_line_lazy(file_path: Path, to_keep: int) -> List[str]:
     """
     A lazy version of random_line that uses reservoir sampling for large files.
@@ -88,11 +86,11 @@ def random_line_lazy(file_path: Path, to_keep: int) -> List[str]:
     return selected_lines
 
 
-def load_dataframe(
+def create_dataframe_from_docs(
     adult_content_files: List[str],
     non_adult_content_files: List[str],
     lines_to_keep: int = 100000,
-):
+) -> pd.DataFrame:
     """
     Loads a random sample of text lines from a list of adult and non-adult JSONL files
     and returns them as a DataFrame.
@@ -108,11 +106,15 @@ def load_dataframe(
     adult_content = []
     non_adult_content = []
 
-    to_keep_adult=lines_to_keep//len(adult_content_files)
-    if not to_keep_adult: to_keep_adult=1
+    to_keep_adult = lines_to_keep // len(adult_content_files)
+    if not to_keep_adult:
+        to_keep_adult = 1
 
     # Read adult content files
-    for file in track(adult_content_files, description=f"Reading adult content files (keeping {to_keep_adult} lines x file)"):
+    for file in track(
+        adult_content_files,
+        description=f"Reading adult content files (keeping {to_keep_adult} lines x file)",
+    ):
         adult_content += random_line_lazy(file, to_keep_adult)
 
     # rprint the number of lines and size list in memory
@@ -120,14 +122,18 @@ def load_dataframe(
         f"Read {len(adult_content)} adult content lines with size {sum([len(x) for x in adult_content])/1_000_000:.2f} MB"
     )
 
-    to_keep_non_adult=lines_to_keep//len(non_adult_content_files)
-    if not to_keep_non_adult: to_keep_non_adult=1
+    to_keep_non_adult = lines_to_keep // len(non_adult_content_files)
+    if not to_keep_non_adult:
+        to_keep_non_adult = 1
 
     # Read non-adult content files
     for file in track(
-        non_adult_content_files, description=f"Reading non-adult content files (keeping {to_keep_non_adult} lines x file)"
+        non_adult_content_files,
+        description=f"Reading non-adult content files (keeping {to_keep_non_adult} lines x file)",
     ):
-        non_adult_content += random_line_lazy(file, to_keep_non_adult) # non adult content is 18x larger than adult content
+        non_adult_content += random_line_lazy(
+            file, to_keep_non_adult
+        )  # non adult content is 18x larger than adult content
 
     rprint(
         f"Read {len(non_adult_content)} non-adult content lines with size {sum([len(x) for x in non_adult_content])/1_000_000:.2f} MB"
@@ -153,36 +159,6 @@ def load_dataframe(
     return df
 
 
-def vectorize_data(df: pd.DataFrame):
-    rprint("Vectorizing the data")
-    vectorizer = TfidfVectorizer(
-        lowercase=True,
-        # stop_words='english',
-        ngram_range=(1, 3),
-        use_idf=True,
-        max_features=30000,  # Limit the number of features
-        min_df=5,  # Ignore terms that appear in less than 5 documents
-    )
-
-    # Use fit_transform directly on the dataframe's text column
-    X = vectorizer.fit_transform(df["text"])
-
-    df = pd.DataFrame(X.toarray(), columns=vectorizer.get_feature_names_out())
-
-    rprint(f"Vectorized data with shape {df.shape}")
-
-    return X, vectorizer
-
-
-def save_vectorizer(vectorizer, output_path: Path, language: str):
-    if not output_path.exists():
-        output_path.mkdir(parents=True)
-
-    vectorizer_file = output_path / f"vectorizer_{language}.joblib"
-    joblib.dump(vectorizer, vectorizer_file)
-    rprint(f"Vectorizer saved to {vectorizer_file}")
-
-
 def save_df(df, output_path: Path, name: str):
     if not output_path.exists():
         output_path.mkdir(parents=True)
@@ -191,12 +167,13 @@ def save_df(df, output_path: Path, name: str):
     joblib.dump(df, df_file)
     rprint(f"DataFrame saved to {df_file}")
 
-def load_all_files(input_dir: str, language: str):
-    adult_files=[]
-    non_adult_files=[]
+
+def load_all_files(input_dir: str, language: str) -> Tuple[List[str], List[str]]:
+    adult_files = []
+    non_adult_files = []
     for dumps in YEARS:
         new_input_dir = f"{input_dir}/{dumps}"
-    
+
         adult_files += get_adult_files(new_input_dir, language)
         non_adult_files += get_non_adult_files(new_input_dir, language)
 
@@ -212,23 +189,26 @@ def load_all_files(input_dir: str, language: str):
     random.shuffle(adult_files)
     random.shuffle(non_adult_files)
 
-    return adult_files,non_adult_files
+    return adult_files, non_adult_files
 
-def generate_text_data(input_dir: str, output_path: str, language: str, should_save=True):
-    
+
+def generate_text_data(
+    input_dir: str, output_path: str, language: str, should_save=True
+) -> pd.DataFrame:
     adult_files, non_adult_files = load_all_files(input_dir, language)
 
-    rprint(f"Found {len(adult_files)} adult files and {len(non_adult_files)} non-adult files.\nNow creating df")
+    rprint(
+        f"Found {len(adult_files)} adult files and {len(non_adult_files)} non-adult files.\nNow creating df"
+    )
 
-
-    df = load_dataframe(adult_files, non_adult_files)
+    df = create_dataframe_from_docs(adult_files, non_adult_files)
     if should_save:
         save_df(df, output_path, f"text_{language}")
 
     return df
 
 
-def load_text_data(input_dir: str, output_path: str, language: str):
+def load_text_data(input_dir: str, output_path: str, language: str) -> pd.DataFrame:
     df_file = Path(output_path) / f"df_text_{language}.joblib"
     if df_file.exists():
         df = joblib.load(df_file)
@@ -237,33 +217,3 @@ def load_text_data(input_dir: str, output_path: str, language: str):
         df = generate_text_data(input_dir, output_path, language)
 
     return df
-
-
-def generate_vectorized_data(df: pd.DataFrame, output_path: str, language: str):
-    df_vector, vectorizer = vectorize_data(df)
-    save_vectorizer(vectorizer, output_path, language)
-    save_df(df_vector, output_path, f"vectorized_{language}")
-
-    return df_vector, vectorizer
-
-
-def load_vectorized_data(df: pd.DataFrame, output_path: str, language: str):
-    vectorizer_file = Path(output_path) / f"vectorizer_{language}.joblib"
-    df_file = Path(output_path) / f"df_vectorized_{language}.joblib"
-
-    if vectorizer_file.exists() and df_file.exists():
-        vectorizer = joblib.load(vectorizer_file)
-        df_vector = joblib.load(df_file)
-        rprint(f"Loaded vectorizer from {vectorizer_file}")
-        rprint(f"Loaded DataFrame from {df_file}")
-    else:
-        df_vector, vectorizer = generate_vectorized_data(df, output_path, language)
-
-    return df_vector, vectorizer
-
-
-def load_data(input_dir: str, output_path: str, language: str):
-    df = load_text_data(input_dir, output_path, language)
-    df_vector, vectorizer = load_vectorized_data(df, output_path, language)
-
-    return df_vector, df['label'], vectorizer

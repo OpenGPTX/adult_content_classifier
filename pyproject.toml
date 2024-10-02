@@ -19,5 +19,5 @@ build-backend = "poetry.core.masonry.api"
 
 
 [tool.poetry.scripts]
-train_bow = "adult_content_classifier.cli:main"
+train_bow = "adult_content_classifier.cli:train_bow"
 profile_bow = "adult_content_classifier.bow.model_profiling:profile"

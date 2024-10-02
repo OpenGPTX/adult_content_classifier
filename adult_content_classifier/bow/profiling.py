@@ -1,14 +1,14 @@
-
-
-
+from pathlib import Path
 import time
 
 import click
-from adult_content_classifier.bow.filtering_functions import load_models, load_models_and_vectorizers
+import joblib
+from adult_content_classifier.bow.filtering_functions import load_models_and_vectorizers
 from adult_content_classifier.cli import INPUT_DIR, OUTPUT_PATH
-from adult_content_classifier.data import generate_text_data, load_all_files, load_dataframe
+from adult_content_classifier.data import load_all_files, create_dataframe_from_docs
 from sklearn.metrics import classification_report
 from rich import print as rprint
+
 
 @click.command()
 @click.option(
@@ -28,24 +28,23 @@ from rich import print as rprint
 @click.option("--language", help="Language of the text data.")
 def profile(input_dir: str, output_path: str, language: str):
     time_start = time.time()
-    models, vectorizers=load_models_and_vectorizers()
+    models, vectorizers = load_models_and_vectorizers()
 
-    model= models[language]
+    model = models[language]
     vectorizer = vectorizers[language]
 
-    time_load = time.time() 
+    time_load = time.time()
 
     rprint(f"Time to load models and vectorizers: {time_load-time_start}")
 
-    adult_files,non_adult_files=load_all_files(input_dir, language)
+    adult_files, non_adult_files = load_all_files(input_dir, language)
 
     # keep only 100 files
     adult_files = adult_files[:5000]
     non_adult_files = non_adult_files[:100]
     to_keep = 5000
 
-    df = load_dataframe(adult_files, non_adult_files, lines_to_keep=to_keep)
-
+    df = create_dataframe_from_docs(adult_files, non_adult_files, lines_to_keep=to_keep)
 
     # Shuffle the data
     df = df.sample(frac=1, random_state=42).reset_index(drop=True)
@@ -59,7 +58,6 @@ def profile(input_dir: str, output_path: str, language: str):
     rprint(f"Data shape: {df.shape}")
     rprint(f"Size of the vectorized data: {df.memory_usage().sum()/1024/1024} MB")
     rprint(f"Total number of characters: {df['text'].apply(len).sum()}")
-
 
     # Vectorize data
 
@@ -91,6 +89,22 @@ def profile(input_dir: str, output_path: str, language: str):
     rprint(f"Total time: {time_end-time_start}")
 
 
+def check_data_sizes(output_path):
+    languages = ["it", "en", "fr", "es", "de"]
 
-    
+    def print_data_info(df):
+        # print the size in MB of the data
+        rprint(f"Size of the  data: {df.memory_usage().sum()/1024/1024} MB")
+        # print the total number of characters
+        rprint(f"Total number of characters: {df['text'].apply(len).sum()}")
+        # print the shape of the data
+        rprint(f"Data shape: {df.shape}")
 
+    for lang in languages:
+        df_file = Path(output_path) / f"df_text_{lang}.joblib"
+        if df_file.exists():
+            df = joblib.load(df_file)
+            print_data_info(df)
+
+        else:
+            rprint(f"Dataframe for {lang} does not exist")

@@ -2,18 +2,22 @@ from pathlib import Path
 import click
 from sklearn.model_selection import train_test_split
 
-from adult_content_classifier.data import (
-    load_data,
+from adult_content_classifier.bow import (
+    load_vectorizer_and_data,
+    evaluate_model,
+    save_model,
+    train_model,
 )
-from adult_content_classifier.bow.model import evaluate_model, save_model, train_model
 from rich import print as rprint
+from rich.traceback import install
 
-INPUT_DIR = "/data/horse/ws/s6690609-gptx_traindata/raw_data/cc/cc_wet_dumps_converted_dt/"
+install(show_locals=True)
+
+INPUT_DIR = (
+    "/data/horse/ws/s6690609-gptx_traindata/raw_data/cc/cc_wet_dumps_converted_dt/"
+)
 OUTPUT_PATH = "/data/horse/ws/s6690609-gptx_traindata/brandizzi/adult_content_classifier/artifacts"
 LANGUAGE = "it"
-
-from rich.traceback import install
-install(show_locals=True)
 
 
 @click.command()
@@ -32,7 +36,7 @@ install(show_locals=True)
     default=OUTPUT_PATH,
 )
 @click.option("--language", default=LANGUAGE, help="Language of the text data.")
-def main(input_dir, output_path, language):
+def train_bow(input_dir, output_path, language):
     rprint(f"Input dir: {input_dir}")
     rprint(f"Output path: {output_path}")
     rprint(f"Language: {language}")
@@ -41,11 +45,11 @@ def main(input_dir, output_path, language):
     if not output_path.exists():
         output_path.mkdir(parents=True)
 
-    X, y, vectorizer = load_data(input_dir, output_path,language)
+    X, y, _ = load_vectorizer_and_data(input_dir, output_path, language)
 
     # split the data into train and test
     X_train, X_test, y_train, y_test = train_test_split(
-        X,y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, random_state=42
     )
 
     model = train_model(X_train, y_train)
@@ -53,7 +57,3 @@ def main(input_dir, output_path, language):
     evaluate_model(model, X_test, y_test)
 
     save_model(model, output_path, language)
-
-
-if __name__ == "__main__":
-    main()
