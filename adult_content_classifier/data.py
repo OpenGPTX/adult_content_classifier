@@ -1,14 +1,15 @@
 import json
+import os
 import random
+from pathlib import Path
+from typing import List
+
 import joblib
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from rich.progress import track
+from datasets import Dataset
 from rich import print as rprint
-
-import os
-from typing import List
-from pathlib import Path
+from rich.progress import track
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 YEARS=[ # dumps with filtered dir
     "2024-22",
@@ -241,6 +242,17 @@ def load_vectorized_data(df: pd.DataFrame, output_path: str, language: str):
 
 def load_data(input_dir: str, output_path: str, language: str):
     df = load_text_data(input_dir, output_path, language)
-    df_vector, vectorizer = load_vectorized_data(df, output_path, language)
+    #df_vector, vectorizer = load_vectorized_data(df, output_path, language)
+    # Assuming 'data' is a list of dictionaries or a pandas DataFrame
+    if isinstance(df, list):
+        dataset_dict = {key: [item[key] for item in df] for key in df[0].keys()}
+    elif isinstance(df, pd.DataFrame):
+        dataset_dict = {column: df[column].tolist() for column in df.columns}
+    
+    dataset_dict = dict(list(dataset_dict)[:10])
 
-    return df_vector, df['label'], vectorizer
+    dataset = Dataset.from_dict(dataset_dict)
+    # Split the dataset into train and validation sets
+    dataset = dataset.train_test_split(test_size=0.2)
+
+    return dataset

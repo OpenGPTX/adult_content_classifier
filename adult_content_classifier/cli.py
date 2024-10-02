@@ -1,17 +1,20 @@
 from pathlib import Path
+
 import click
+from rich import print as rprint
 from sklearn.model_selection import train_test_split
 
 from adult_content_classifier.data import (
     load_data,
 )
 from adult_content_classifier.model import evaluate_model, save_model, train_model
-from rich import print as rprint
 
 INPUT_DIR = "/data/horse/ws/s6690609-gptx_traindata/raw_data/cc/cc_wet_dumps_converted_dt/"
 OUTPUT_PATH = "/data/horse/ws/s6690609-gptx_traindata/brandizzi/adult_content_classifier/artifacts"
 LANGUAGE = "it"
+import roberta
 from rich.traceback import install
+
 install(show_locals=True)
 
 
@@ -40,18 +43,21 @@ def main(input_dir, output_path, language):
     if not output_path.exists():
         output_path.mkdir(parents=True)
 
-    X, y, vectorizer = load_data(input_dir, output_path,language)
+    dataset = load_data(input_dir, output_path, language)
+    tokenized_dataset = roberta.tokenize_data(dataset)
+    trainer = roberta.train_roberta(output_path, tokenized_dataset)
+    roberta.evaluate_model(trainer)    
+
+    #X, y, vectorizer = load_data(input_dir, output_path,language)
+    #X, y = load_data(input_dir, output_path,language)
 
     # split the data into train and test
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,y, test_size=0.2, random_state=42
-    )
-
-    model = train_model(X_train, y_train)
-
-    evaluate_model(model, X_test, y_test)
-
-    save_model(model, output_path, language)
+    # X_train, X_test, y_train, y_test = train_test_split(
+    #     X,y, test_size=0.2, random_state=42
+    # )
+    #model = train_model(X_train, y_train)
+    #evaluate_model(model, X_test, y_test)
+    #save_model(model, output_path, language)
 
 
 if __name__ == "__main__":
