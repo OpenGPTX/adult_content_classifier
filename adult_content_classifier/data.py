@@ -2,11 +2,10 @@ import json
 import os
 import random
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 import joblib
 import pandas as pd
-from click import Tuple
 from rich import print as rprint
 from rich.progress import track
 
@@ -156,6 +155,14 @@ def create_dataframe_from_docs(
         }
     )
 
+    # df = pd.DataFrame(
+    #     {
+    #         "text": ["sample text 1", "sample text 2", "sample text 3", "sample text 4", "sample text 5", "sample text 6", "sample text 7", "sample text 8", 
+    #                  "sample text 9", "sample text 10"],
+    #         "label": [1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+    #     }
+    # )
+
     rprint(f"Created DataFrame with {len(df)} rows")
     return df
 
@@ -170,11 +177,11 @@ def save_df(df, output_path: Path, name: str):
 
 
 
-def load_files_all_languages(input_dir: str, language: List[str]) -> Tuple[List[str], List[str]]:
+def load_files_all_languages(input_dir: str, languages: List[str]) -> Tuple[List[str], List[str]]:
     adult_files = []
     non_adult_files = []
     for dumps in YEARS:
-        for language in ["it", "en", "fr", "es", "de"]:    
+        for language in languages:    
             new_input_dir = f"{input_dir}/{dumps}"
 
             adult_files += get_adult_files(new_input_dir, language)

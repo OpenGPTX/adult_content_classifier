@@ -4,7 +4,6 @@ import click
 from rich import print as rprint
 from rich.traceback import install
 from sklearn.model_selection import train_test_split
-from transformers import TextClassifier
 
 from adult_content_classifier.bow import (
     evaluate_model,
@@ -12,14 +11,15 @@ from adult_content_classifier.bow import (
     save_model,
     train_model,
 )
+from adult_content_classifier.roberta_classifier import TextClassifier
 
 install(show_locals=True)
 
 INPUT_DIR = (
     "/data/horse/ws/s6690609-gptx_traindata/raw_data/cc/cc_wet_dumps_converted_dt/"
 )
-OUTPUT_PATH = "/data/horse/ws/s6690609-gptx_traindata/brandizzi/adult_content_classifier/artifacts"
-LANGUAGE = "it"
+OUTPUT_PATH = "/data/horse/ws/s6690609-gptx_traindata/anirban/adult_content_classifier/artifacts"
+LANGUAGE = ["en","de","fr", "it", "es"]
 
 
 @click.command()

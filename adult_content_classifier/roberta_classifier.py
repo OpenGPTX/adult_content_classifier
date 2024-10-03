@@ -3,9 +3,6 @@ from typing import List
 import numpy as np
 import pandas as pd
 import torch
-
-# Importing data functions from data.py
-from data import load_data, load_text_data
 from datasets import Dataset
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.model_selection import train_test_split
@@ -16,6 +13,9 @@ from transformers import (
     XLMRobertaForSequenceClassification,
     XLMRobertaTokenizer,
 )
+
+# Importing data functions from data.py
+from .data import load_text_data
 
 
 class TextClassifier:
