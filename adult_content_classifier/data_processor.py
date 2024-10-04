@@ -1,13 +1,18 @@
 import json
 import os
 import random
+from functools import partial
 from pathlib import Path
 from typing import List, Tuple
 
 import joblib
 import pandas as pd
+from datasets import Dataset
+from joblib import Parallel, delayed
+from loguru import logger
 from rich import print as rprint
 from rich.progress import track
+from sklearn.model_selection import train_test_split
 
 YEARS = [  # dumps with filtered dir
     "2024-22",
@@ -20,7 +25,7 @@ YEARS = [  # dumps with filtered dir
 def get_adult_files(input_path: str, language: str) -> List[str]:
     adult_content_path = Path(input_path) / "filtered"
 
-    rprint(f"Looking for non-adult files in {adult_content_path}")
+    logger.info(f"Looking for adult files in {adult_content_path}")
  
 
     files = [
@@ -36,7 +41,7 @@ def get_adult_files(input_path: str, language: str) -> List[str]:
     # convert to Path
     files = [Path(adult_content_path) / f for f in files]
 
-    rprint(f"Found {len(files)} adult files")
+    logger.info(f"Found {len(files)} adult files")
 
     # shuffle the files
     random.shuffle(files)
@@ -46,14 +51,14 @@ def get_adult_files(input_path: str, language: str) -> List[str]:
 
 def get_non_adult_files(input_path: str, language: str) -> List[str]:
     non_adult_content_path = Path(input_path) / language
-    rprint(f"Looking for non-adult files in {non_adult_content_path}")
+    logger.info(f"Looking for non-adult files in {non_adult_content_path}")
 
     files = [f for f in os.listdir(non_adult_content_path) if f.endswith("jsonl")]
 
     # convert to Path
     files = [Path(non_adult_content_path) / f for f in files]
 
-    rprint(f"Found {len(files)} non-adult files")
+    logger.info(f"Found {len(files)} non-adult files")
 
     # shuffle the files
     random.shuffle(files)
@@ -85,11 +90,68 @@ def random_line_lazy(file_path: Path, to_keep: int) -> List[str]:
 
     return selected_lines
 
+def process_file(file, to_keep_adult):
+    return random_line_lazy(file, to_keep_adult)
+
+def process_adult_content(adult_content_files: List[str],
+    lines_to_keep: int = 500000,)-> pd.DataFrame:
+
+    adult_content = []
+    to_keep_adult = lines_to_keep // len(adult_content_files)
+    if not to_keep_adult:
+        to_keep_adult = 1
+
+    # Read adult content files
+    # for file in track(
+    #     adult_content_files,
+    #     description=f"Reading adult content files (keeping {to_keep_adult} lines x file)",
+    # ):
+    #     adult_content += random_line_lazy(file, to_keep_adult)
+
+    adult_content = Parallel(n_jobs=8, verbose=10)(delayed(process_file)(file, to_keep_adult) for file in adult_content_files)
+    
+
+    # rprint the number of lines and size list in memory
+    logger.info(
+        f"Read {len(adult_content)} adult content lines with size {sum([len(x) for x in adult_content])/1_000_000:.2f} MB"
+    )
+    random.shuffle(adult_content)
+    adult_content = adult_content[:lines_to_keep]
+    
+    return adult_content
+
+
+
+def process_nonadult_content(non_adult_content_files: List[str],
+    lines_to_keep: int = 500000,) -> pd.DataFrame:
+
+    non_adult_content = []
+    to_keep_non_adult = lines_to_keep // len(non_adult_content_files)
+    if not to_keep_non_adult:
+        to_keep_non_adult = 1
+
+    # Read non-adult content files
+    non_adult_content = Parallel(n_jobs=8, verbose=10)(delayed(process_file)(file, to_keep_non_adult) for file in non_adult_content)
+    
+
+    logger.info(
+        f"Read {len(non_adult_content)} non-adult content lines with size {sum([len(x) for x in non_adult_content])/1_000_000:.2f} MB"
+    )
+
+    # Shuffle the data
+    
+    random.shuffle(non_adult_content)
+
+    # Keep only the first 100k lines
+    non_adult_content = non_adult_content[:lines_to_keep]
+
+    return non_adult_content
+    
 
 def create_dataframe_from_docs(
     adult_content_files: List[str],
     non_adult_content_files: List[str],
-    lines_to_keep: int = 100000,
+    lines_to_keep: int = 500000,
 ) -> pd.DataFrame:
     """
     Loads a random sample of text lines from a list of adult and non-adult JSONL files
@@ -103,49 +165,11 @@ def create_dataframe_from_docs(
     Returns:
         A DataFrame containing the sampled text lines and their corresponding labels.
     """
-    adult_content = []
-    non_adult_content = []
 
-    to_keep_adult = lines_to_keep // len(adult_content_files)
-    if not to_keep_adult:
-        to_keep_adult = 1
+    adult_content = process_adult_content(adult_content_files, lines_to_keep)
+    non_adult_content = process_nonadult_content(non_adult_content_files, lines_to_keep)
 
-    # Read adult content files
-    for file in track(
-        adult_content_files,
-        description=f"Reading adult content files (keeping {to_keep_adult} lines x file)",
-    ):
-        adult_content += random_line_lazy(file, to_keep_adult)
-
-    # rprint the number of lines and size list in memory
-    rprint(
-        f"Read {len(adult_content)} adult content lines with size {sum([len(x) for x in adult_content])/1_000_000:.2f} MB"
-    )
-
-    to_keep_non_adult = lines_to_keep // len(non_adult_content_files)
-    if not to_keep_non_adult:
-        to_keep_non_adult = 1
-
-    # Read non-adult content files
-    for file in track(
-        non_adult_content_files,
-        description=f"Reading non-adult content files (keeping {to_keep_non_adult} lines x file)",
-    ):
-        non_adult_content += random_line_lazy(
-            file, to_keep_non_adult
-        )  # non adult content is 18x larger than adult content
-
-    rprint(
-        f"Read {len(non_adult_content)} non-adult content lines with size {sum([len(x) for x in non_adult_content])/1_000_000:.2f} MB"
-    )
-
-    # Shuffle the data
-    random.shuffle(adult_content)
-    random.shuffle(non_adult_content)
-
-    # Keep only the first 100k lines
-    adult_content = adult_content[:lines_to_keep]
-    non_adult_content = non_adult_content[:lines_to_keep]
+    
 
     # Create the DataFrame
     df = pd.DataFrame(
@@ -155,15 +179,7 @@ def create_dataframe_from_docs(
         }
     )
 
-    # df = pd.DataFrame(
-    #     {
-    #         "text": ["sample text 1", "sample text 2", "sample text 3", "sample text 4", "sample text 5", "sample text 6", "sample text 7", "sample text 8", 
-    #                  "sample text 9", "sample text 10"],
-    #         "label": [1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
-    #     }
-    # )
-
-    rprint(f"Created DataFrame with {len(df)} rows")
+    logger.info(f"Created DataFrame with {len(df)} rows")
     return df
 
 
@@ -173,7 +189,7 @@ def save_df(df, output_path: Path, name: str):
 
     df_file = output_path / f"df_{name}.joblib"
     joblib.dump(df, df_file)
-    rprint(f"DataFrame saved to {df_file}")
+    logger.info(f"DataFrame saved to {df_file}")
 
 
 
@@ -188,11 +204,11 @@ def load_files_all_languages(input_dir: str, languages: List[str]) -> Tuple[List
             non_adult_files += get_non_adult_files(new_input_dir, language)
 
             if not adult_files:
-                rprint(f"No adult files found in {new_input_dir}")
+                logger.info(f"No adult files found in {new_input_dir}")
                 continue
 
             if not non_adult_files:
-                rprint(f"No non-adult files found in {new_input_dir}")
+                logger.info(f"No non-adult files found in {new_input_dir}")
                 continue
 
     # shuffle the files
@@ -212,11 +228,11 @@ def load_all_files(input_dir: str, language: List[str]) -> Tuple[List[str], List
             non_adult_files += get_non_adult_files(new_input_dir, language)
 
             if not adult_files:
-                rprint(f"No adult files found in {new_input_dir}")
+                logger.info(f"No adult files found in {new_input_dir}")
                 continue
 
             if not non_adult_files:
-                rprint(f"No non-adult files found in {new_input_dir}")
+                logger.info(f"No non-adult files found in {new_input_dir}")
                 continue
 
     # shuffle the files
@@ -231,13 +247,13 @@ def generate_text_data(
 ) -> pd.DataFrame:
     
     name = language[0]
-    if len(language>1):
+    if len(language)>1:
         adult_files, non_adult_files = load_files_all_languages(input_dir, language)
         name = "ENDEFRITES"
     else:
         adult_files, non_adult_files = load_all_files(input_dir, language[0])
 
-    rprint(
+    logger.info(
         f"Found {len(adult_files)} adult files and {len(non_adult_files)} non-adult files.\nNow creating df"
     )
 
@@ -258,8 +274,13 @@ def load_text_data(input_dir: str, output_path: str, language: List[str]) -> pd.
     df_file = Path(output_path) / f"df_text_{name}.joblib"
     if df_file.exists():
         df = joblib.load(df_file)
-        rprint(f"Loaded DataFrame from {df_file} with {len(df)} lines ")
+        logger.info(f"Loaded DataFrame from {df_file} with {len(df)} lines ")
     else:
         df = generate_text_data(input_dir, output_path, language)
 
-    return df
+    train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
+    train_dataset = Dataset.from_pandas(train_df)
+    val_dataset = Dataset.from_pandas(val_df)
+
+    return train_dataset, val_dataset
+    

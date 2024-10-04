@@ -1,9 +1,9 @@
 from pathlib import Path
 from typing import Any, Dict, List
+
 import joblib
 
-
-ARTIFACT_PATH = "/data/horse/ws/s6690609-gptx_traindata/brandizzi/adult_content_classifier/artifacts"
+ARTIFACT_PATH = "/data/horse/ws/s6690609-gptx_traindata/anirban/adult_content_classifier/artifacts"
 
 
 def load_models(artifact_paths) -> Dict[str, Any]:

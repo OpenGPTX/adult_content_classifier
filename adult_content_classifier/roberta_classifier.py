@@ -1,11 +1,12 @@
+
 from typing import List
 
 import numpy as np
-import pandas as pd
-import torch
-from datasets import Dataset
+
+# import torch
+# Importing data functions from data.py
+from data_processor import load_text_data
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-from sklearn.model_selection import train_test_split
 from transformers import (
     DataCollatorWithPadding,
     Trainer,
@@ -13,9 +14,6 @@ from transformers import (
     XLMRobertaForSequenceClassification,
     XLMRobertaTokenizer,
 )
-
-# Importing data functions from data.py
-from .data import load_text_data
 
 
 class TextClassifier:
@@ -30,21 +28,6 @@ class TextClassifier:
         self.tokenizer = XLMRobertaTokenizer.from_pretrained(model_name)
         self.model = XLMRobertaForSequenceClassification.from_pretrained(model_name, num_labels=2)
 
-    def load_and_prepare_data(self):
-        """
-        Loads and splits the dataset into training and validation sets.
-        """
-        print("Loading data...")
-        # df_vector, labels, _ = load_data(self.input_dir, self.output_dir, self.languages)
-        # df = pd.DataFrame({'text': df_vector, 'label': labels})
-
-
-        dataset = load_text_data(self.input_dir, self.output_dir, self.languages)
-        train_df, val_df = train_test_split(dataset, test_size=0.2, random_state=42)
-        train_dataset = Dataset.from_pandas(train_df)
-        val_dataset = Dataset.from_pandas(val_df)
-
-        return train_dataset, val_dataset
 
     def tokenize_data(self, dataset):
         """
@@ -70,6 +53,11 @@ class TextClassifier:
         """
         print("Starting training...")
         data_collator = DataCollatorWithPadding(tokenizer=self.tokenizer)
+        # if torch.cuda.is_available() and torch.cuda.device_count() > 0:
+        #     self.model.to("cuda:0")
+        # else:
+        #     print("CUDA device not available.")
+        # self.model.to("cuda:0")
 
 
         training_args = TrainingArguments(
@@ -77,9 +65,9 @@ class TextClassifier:
             evaluation_strategy="epoch",
             save_strategy="epoch",
             learning_rate=2e-5,
-            per_device_train_batch_size=8,
-            per_device_eval_batch_size=8,
-            num_train_epochs=3,
+            per_device_train_batch_size=16,
+            per_device_eval_batch_size=16,
+            num_train_epochs=5,
             weight_decay=0.01,
             logging_dir="./logs",
             logging_steps=10,
@@ -112,14 +100,14 @@ class TextClassifier:
         Runs the entire pipeline: loading data, tokenizing, training, and saving the model.
         """
         # Load and prepare the data
-        train_dataset, val_dataset = self.load_and_prepare_data()
+        train_dataset, val_dataset = load_text_data(self.input_dir, self.output_dir, self.languages)
 
-        # Tokenize the datasets
-        train_dataset = self.tokenize_data(train_dataset)
-        val_dataset = self.tokenize_data(val_dataset)
+        # # Tokenize the datasets
+        # train_dataset = self.tokenize_data(train_dataset)
+        # val_dataset = self.tokenize_data(val_dataset)
 
-        # Train the model
-        self.train(train_dataset, val_dataset)
+        # # Train the model
+        # self.train(train_dataset, val_dataset)
 
-        # Save the trained model and tokenizer
-        self.save()
+        # # Save the trained model and tokenizer
+        # self.save()

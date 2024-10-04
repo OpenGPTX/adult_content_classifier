@@ -1,9 +1,8 @@
 from pathlib import Path
+
 import joblib
 import pandas as pd
-from rich import print as rprint
-import joblib
-from adult_content_classifier.data import load_text_data, save_df
+from data import load_text_data, save_df
 from rich import print as rprint
 from sklearn.feature_extraction.text import TfidfVectorizer
 
