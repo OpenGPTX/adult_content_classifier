@@ -5,6 +5,11 @@ description = ""
 authors = ["Nicolo' Brandizzi <nicolo.brandizzi@iais.fraunhofer.de>"]
 readme = "README.md"
 
+[[tool.poetry.source]]
+name = "torch"
+url = "https://download.pytorch.org/whl/cu118"
+priority = 'explicit'
+
 [tool.poetry.dependencies]
 python = "^3.11"
 pandas = "^2.2.3"
@@ -13,6 +18,13 @@ scikit-learn = "^1.5.2"
 
 click = "^8.1.7"
 rich = "^13.8.1"
+transformers = "^4.45.1"
+torch = "^2.4.1+cu118"
+torchvision = "^0.19.1+cu118"
+datasets = "^3.0.1"
+evaluate = "^0.4.3"
+accelerate = "^0.34.2"
+sentencepiece = "^0.2.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
