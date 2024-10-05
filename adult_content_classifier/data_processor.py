@@ -131,7 +131,7 @@ def process_nonadult_content(non_adult_content_files: List[str],
         to_keep_non_adult = 1
 
     # Read non-adult content files
-    non_adult_content = Parallel(n_jobs=8, verbose=10)(delayed(process_file)(file, to_keep_non_adult) for file in non_adult_content)
+    non_adult_content = Parallel(n_jobs=8, verbose=10)(delayed(process_file)(file, to_keep_non_adult) for file in non_adult_content_files)
     
 
     logger.info(
@@ -196,8 +196,10 @@ def save_df(df, output_path: Path, name: str):
 def load_files_all_languages(input_dir: str, languages: List[str]) -> Tuple[List[str], List[str]]:
     adult_files = []
     non_adult_files = []
+    languages = ["en","de","fr","it","es"]
     for dumps in YEARS:
-        for language in languages:    
+        for language in languages:   
+            logger.info(f"Getting files for {language}") 
             new_input_dir = f"{input_dir}/{dumps}"
 
             adult_files += get_adult_files(new_input_dir, language)

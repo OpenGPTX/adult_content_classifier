@@ -9,7 +9,7 @@
 #SBATCH --partition=alpha
 #SBATCH --output=/data/horse/ws/anbh299g-logs/logs/adult_content_classifier/slurm_logs/%A_%a.out.log
 #SBATCH --error=/data/horse/ws/anbh299g-logs/logs/adult_content_classifier/slurm_logs/%A_%a.err.log
-##SBATCH --gres=gpu:4
+# #SBATCH --gres=gpu:4
 
 
 
