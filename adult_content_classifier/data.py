@@ -1,13 +1,12 @@
 import json
 import random
-from click import Tuple
 import joblib
 import pandas as pd
 from rich.progress import track
 from rich import print as rprint
 
 import os
-from typing import List
+from typing import List,Tuple
 from pathlib import Path
 
 YEARS = [  # dumps with filtered dir
@@ -133,7 +132,7 @@ def create_dataframe_from_docs(
     ):
         non_adult_content += random_line_lazy(
             file, to_keep_non_adult
-        )  # non adult content is 18x larger than adult content
+        )  # non adult content is 180x larger than adult content
 
     rprint(
         f"Read {len(non_adult_content)} non-adult content lines with size {sum([len(x) for x in non_adult_content])/1_000_000:.2f} MB"

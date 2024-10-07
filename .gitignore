@@ -1,0 +1,4 @@
+*__pycache__/
+.vscode/settings.json
+rsync.exclude
+.vscode/settings.json

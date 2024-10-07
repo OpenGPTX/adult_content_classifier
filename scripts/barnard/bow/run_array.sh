@@ -26,4 +26,5 @@ load_modules
 language=$(echo $LANGUAGES | cut -d ' ' -f $SLURM_ARRAY_TASK_ID)
 
 ## run with slurm array job
-poetry -vvv run train_bow --language $language
+#poetry -vvv run train_bow --language $language 
+poetry -vvv run eval_bow --language $language --model_dir $WORKING_DIR/artifacts

@@ -42,7 +42,11 @@ def evaluate_model(model, features_test_transformed, y_test):
     rprint(classification_report(y_test, y_pred))
 
     # print the confusion matrix
-    rprint(confusion_matrix(y_test, y_pred))
+    rprint(f"Confusion matrix:\n[True Negative, False Positive\nFalse Negative True Positive]")
+    cm=confusion_matrix(y_test, y_pred)
+    rprint(cm)
+    cm=cm/cm.sum()
+    rprint(cm)
 
     rprint(f"Evaluation time: {time.time() - start}")
     return f1, accuracy

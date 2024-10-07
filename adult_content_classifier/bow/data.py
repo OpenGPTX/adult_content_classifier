@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 import joblib
 import pandas as pd
 from rich import print as rprint
@@ -38,10 +39,12 @@ def save_vectorizer(vectorizer, output_path: Path, language: str):
     rprint(f"Vectorizer saved to {vectorizer_file}")
 
 
-def generate_vectorized_data(df: pd.DataFrame, output_path: str, language: str):
+def generate_vectorized_data(df: pd.DataFrame, language: str, output_path: Optional[str]=None,):
     df_vector, vectorizer = vectorize_data(df)
-    save_vectorizer(vectorizer, output_path, language)
-    save_df(df_vector, output_path, f"vectorized_{language}")
+
+    if output_path:
+        save_vectorizer(vectorizer, output_path, language)
+        save_df(df_vector, output_path, f"vectorized_{language}")
 
     return df_vector, vectorizer
 
@@ -56,7 +59,7 @@ def load_vectorized_data(df: pd.DataFrame, output_path: str, language: str):
         rprint(f"Loaded vectorizer from {vectorizer_file}")
         rprint(f"Loaded DataFrame from {df_file}")
     else:
-        df_vector, vectorizer = generate_vectorized_data(df, output_path, language)
+        df_vector, vectorizer = generate_vectorized_data(df, language=language,output_path=output_path)
 
     return df_vector, vectorizer
 
