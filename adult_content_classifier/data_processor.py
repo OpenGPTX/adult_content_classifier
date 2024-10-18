@@ -108,7 +108,7 @@ def process_adult_content(adult_content_files: List[str],
     # ):
     #     adult_content += random_line_lazy(file, to_keep_adult)
 
-    adult_content = Parallel(n_jobs=8, verbose=10)(delayed(process_file)(file, to_keep_adult) for file in adult_content_files)
+    adult_content = Parallel(n_jobs=50, verbose=10)(delayed(process_file)(file, to_keep_adult) for file in adult_content_files)
     
 
     # rprint the number of lines and size list in memory
@@ -131,7 +131,7 @@ def process_nonadult_content(non_adult_content_files: List[str],
         to_keep_non_adult = 1
 
     # Read non-adult content files
-    non_adult_content = Parallel(n_jobs=8, verbose=10)(delayed(process_file)(file, to_keep_non_adult) for file in non_adult_content_files)
+    non_adult_content = Parallel(n_jobs=50, verbose=10)(delayed(process_file)(file, to_keep_non_adult) for file in non_adult_content_files)
     
 
     logger.info(
@@ -196,7 +196,13 @@ def save_df(df, output_path: Path, name: str):
 def load_files_all_languages(input_dir: str, languages: List[str]) -> Tuple[List[str], List[str]]:
     adult_files = []
     non_adult_files = []
-    languages = ["en","de","fr","it","es"]
+    # languages = ["en","de","fr","it","es"]
+    languages = [
+        "bg", "cs", "da", "de", "el", "en", "es", "et", "fi", "fr", 
+        "ga", "hr", "hu", "it", "lt", "lv", "mt", "nl", "pl", "pt", 
+        "ro", "sk", "sl", "sv"
+    ]
+
     for dumps in YEARS:
         for language in languages:   
             logger.info(f"Getting files for {language}") 
@@ -251,7 +257,7 @@ def generate_text_data(
     name = language[0]
     if len(language)>1:
         adult_files, non_adult_files = load_files_all_languages(input_dir, language)
-        name = "ENDEFRITES"
+        name = "eu24"
     else:
         adult_files, non_adult_files = load_all_files(input_dir, language[0])
 
@@ -271,7 +277,7 @@ def load_text_data(input_dir: str, output_path: str, language: List[str]) -> pd.
     # Required update when loading for multiple lanugages
     name = language[0]
     if len(language)>1:
-        name = "ENDEFRITES"
+        name = "eu24"
 
     df_file = Path(output_path) / f"df_text_{name}.joblib"
     if df_file.exists():

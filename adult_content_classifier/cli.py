@@ -18,7 +18,12 @@ INPUT_DIR = (
     "/data/horse/ws/s6690609-gptx_traindata/raw_data/cc/cc_wet_dumps_converted_dt/"
 )
 OUTPUT_PATH = "/data/horse/ws/s6690609-gptx_traindata/anirban/adult_content_classifier/artifacts"
-LANGUAGE = ["en","de","fr", "it", "es"]
+LANGUAGE = [
+    "bg", "cs", "da", "de", "el", "en", "es", "et", "fi", "fr", 
+    "ga", "hr", "hu", "it", "lt", "lv", "mt", "nl", "pl", "pt", 
+    "ro", "sk", "sl", "sv"
+]
+
 
 # @click.group()
 # def main():
